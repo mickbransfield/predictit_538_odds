@@ -2,13 +2,14 @@
 # 1. Clarify column names
 # 2. Fix workaround in nan values for implied probability
 # 3. Create key by parsing PredictIt presidential market/contracts
+# 4. Fair probability
 
 # Import modules
 import json
 import requests
 import pandas as pd
-import numpy as np
 pd.set_option('display.max_rows', None) #print all rows without truncating
+import numpy as np
 
 # Create unique key to link 538 polls with PredictIt markets
 states = [[6212, 'Biden', 22223],   #AL
@@ -129,7 +130,7 @@ predictit_df.columns=['Market_ID','Market_Name','Contract_ID','Contract_Name','b
 
 # Pull in polling data from 538
 pres_polling = pd.read_csv('https://projects.fivethirtyeight.com/polls-page/president_polls.csv')
-pres_polling = pres_polling.dropna(subset=['state'])
+#pres_polling = pres_polling.dropna(subset=['state'])
 
 # Drop extraneous columns
 pres_polling = pres_polling.drop(['pollster_id', 'pollster','sponsor_ids','sponsors','display_name', 'pollster_rating_id', 'pollster_rating_name', 'fte_grade', 'sample_size', 'population', 'population_full', 'methodology', 'seat_number', 'seat_name', 'start_date', 'end_date', 'sponsor_candidate', 'internal', 'partisan', 'tracking', 'nationwide_batch', 'ranked_choice_reallocated', 'notes', 'url'], axis=1)
@@ -139,50 +140,24 @@ pres_polling['created_at'] = pd.to_datetime(pres_polling['created_at']) #convert
 recent_pres_polling = pres_polling.sort_values(by=['created_at']).drop_duplicates(['state', 'candidate_name'], keep='last')
 recent_pres_polling = recent_pres_polling[recent_pres_polling['answer'].isin(['Biden', 'Trump'])]
 
-# import bookies.com html
-url = 'https://bookies.com/news/swing-state-election-odds'
-r = requests.get(url)
-r.status_code
+# Pull in odds
+odds_df = pd.read_csv('https://raw.githubusercontent.com/mauricebransfield/predictit_538_odds/master/odds_state_presidential.csv', index_col=[0]) # error_bad_lines=False,
 
-# convert to pandas
-tables = pd.read_html(r.text)
+# Replace hyphen in state names with space
+odds_df['state'] = odds_df['state'].str.replace('-',' ') 
 
-# delete extraneous table #3
-del tables[2]
+# Standardize Washington DC & Washington State
+odds_df['state'] = odds_df['state'].str.replace('Washington Dc','DC')
+odds_df['state'] = odds_df['state'].str.replace('Washington State','Washington')
 
-# strip asterix from state names
-tables[0]['State'] = tables[0]['State'].str.replace(r'[^\w\s]+', '')
-tables[1]['State'] = tables[1]['State'].str.replace(r'[^\w\s]+', '')
+# Replace party with candidate names
+odds_df['answer'] = odds_df['answer'].str.replace('Republicans','Trump')
+odds_df['answer'] = odds_df['answer'].str.replace('Democratic','Biden')
+odds_df['answer'] = odds_df['answer'].str.replace('Democrats','Biden')
+odds_df['answer'] = odds_df['answer'].str.replace('Democrat','Biden')
 
-# strip "+" from underdog line
-#tables[0]['Underdog'] = tables[0]['Underdog'].replace('\D+', '', regex=True)
-#tables[1]['Underdog'] = tables[1]['Underdog'].replace('\D+', '', regex=True)
-
-# Rename columns
-tables[0] = tables[0].rename(columns={'State':'state','Favorite':'Biden_odds', "Underdog": "Trump_odds"})
-tables[1] = tables[1].rename(columns={'State': 'state','Favorite': 'Trump_odds', 'Underdog': 'Biden_odds'})
-
-# Combine 2 dataframes
-frames = [tables[0], tables[1]]
-bookies_df = pd.concat(frames, sort=True)
-
-# Remove text and punctuation from moneyline columns
-bookies_df['Trump_odds'] = bookies_df['Trump_odds'].str.replace(r'Republicans ', '')
-bookies_df['Biden_odds'] = bookies_df['Biden_odds'].str.replace(r'Democrats ', '')
-bookies_df = bookies_df.replace(to_replace='\(', value="", regex=True)
-bookies_df = bookies_df.replace(to_replace='\)', value="", regex=True)
-
-# split dataframe
-trump_bookies_df = bookies_df[['Trump_odds', 'state']].copy()
-trump_bookies_df['answer'] = 'Trump'
-biden_bookies_df = bookies_df[['Biden_odds', 'state']].copy()
-biden_bookies_df['answer'] = 'Biden'
-
-# Merge dataframes
-trump_bookies_df = trump_bookies_df.rename(columns={'Trump_odds': 'odds'})
-biden_bookies_df = biden_bookies_df.rename(columns={'Biden_odds': 'odds'})
-frames2 = [trump_bookies_df, biden_bookies_df]
-bookies_df = pd.concat(frames2, sort=True)
+# Drop columns with all nan values
+odds_df = odds_df.dropna(axis=1, how='all')
 
 # Merge key and 538 dataframes together
 df = pd.merge(df, recent_pres_polling, on=['race_id', 'answer'])
@@ -191,28 +166,36 @@ df = pd.merge(df, recent_pres_polling, on=['race_id', 'answer'])
 df = pd.merge(df, predictit_df, on=['Contract_ID'])
 
 # Merge df and trump odds
-df = pd.merge(df, bookies_df, on=['state', 'answer'], how='left')
+df = pd.merge(df, odds_df, on=['state', 'answer'], how='left')
 
-# Helper function to convert moneyline odds to implied probability
-def implied(x):
-    if (x < 0):
-        return (abs(x) / (abs(x) + 100))
-    else:
-        return (100 / (x + 100))
+# Convert fractional odds to column of implied probability
+# denominator / (denominator + numerator) = implied probability
+df['numerator'], df['denominator'] = df['betfair'].str.split('/', 1).str
+df['denominator'] = pd.to_numeric(df['denominator'], errors='coerce').fillna(0).astype(np.int64)
+df['denominator'] = df['denominator'].mask(df['denominator']==0).fillna(1) # workaround
+df['numerator'] = pd.to_numeric(df['numerator'], errors='coerce').fillna(0).astype(np.int64)
+df['betfair_imp_prob'] = (df['denominator'] / (df['denominator'] + df['numerator']))
 
-# Convert moneyline odds to column of implied probability
-df['odds2'] = pd.to_numeric(df['odds'], errors='coerce').fillna(0).astype(np.int64)
-df['implied_prob'] = df['odds2'].map(implied)
-df.loc[df['implied_prob']==1.000000, 'implied_prob'] = np.nan #workaround
-df['Bookies-PredicitIt'] = df['implied_prob']-df['bestBuyYesCost']
-df['implied_prob'] = df['implied_prob'].round(2)
-df['Bookies-PredicitIt'] = df['Bookies-PredicitIt'].round(2)
+# workaround to fix previous workaround
+mask = df['betfair'].isnull()
+column_name = 'betfair_imp_prob'
+df.loc[mask, column_name] = np.nan
+
+# Create column of difference in betfair & PredictIt
+df['betfair-PredicitIt'] = df['betfair_imp_prob']-df['bestBuyYesCost']
+
+# Round 2 decimal places
+df['betfair_imp_prob'] = df['betfair_imp_prob'].round(2)
+df['betfair-PredicitIt'] = df['betfair-PredicitIt'].round(2)
 
 #print out select columns
 print(df[['state', 
             'answer', 
             'pct', 
             'bestBuyYesCost', 
-            'odds',
-            'implied_prob',
-            'Bookies-PredicitIt']])
+            'betfair',
+            'betfair_imp_prob',
+            'betfair-PredicitIt']])
+
+# Write dataframe to CSV file in working directory
+df.to_csv(r'./predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
