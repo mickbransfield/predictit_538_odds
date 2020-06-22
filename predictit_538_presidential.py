@@ -10,6 +10,8 @@ import requests
 import pandas as pd
 pd.set_option('display.max_rows', None) #print all rows without truncating
 import numpy as np
+import datetime
+import os
 
 # Create unique key to link 538 polls with PredictIt markets
 states = [[6212, 'Biden', 22223],   #AL
@@ -199,3 +201,8 @@ print(df[['state',
 
 # Write dataframe to CSV file in working directory
 df.to_csv(r'./predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
+
+# Write dataframe with timestamp to archive folder
+snapshotdate = datetime.datetime.today().strftime('%Y-%m-%d')
+os.chdir('/Users/Mick/Desktop/df_data')
+df.to_csv(open(snapshotdate+'.csv','w'))
