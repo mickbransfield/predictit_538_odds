@@ -204,5 +204,5 @@ df.to_csv(r'./predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
 
 # Write dataframe with timestamp to archive folder
 snapshotdate = datetime.datetime.today().strftime('%Y-%m-%d')
-os.chdir('/Users/Mick/Desktop/df_data')
+os.chdir('C:/Users/Mick/Documents/Python/Python/predictit_538_odds/Archive')
 df.to_csv(open(snapshotdate+'.csv','w'))
