@@ -1,9 +1,8 @@
 # TO DO
-# 1. Add additional odds
-# 2. bestBuyNoCost
-# 3. Fix workaround in nan values for implied probability
-# 4. Dashboard
-# 5. Fair probability
+# 1. add bestBuyNoCost
+# 2. Fix workaround in nan values for implied probability
+# 3. Dashboard
+# 4. Fair probability
 
 # Import modules
 import json
@@ -104,24 +103,16 @@ odds_df['answer'] = odds_df['answer'].str.replace('Democrat','Biden')
 # Drop columns with all nan values
 odds_df = odds_df.dropna(axis=1, how='all')
 
-# Merge PredictIt and odds dataframes together
-df = pd.merge(predictit_df, odds_df, on=['state', 'answer'], how='left')
-
-# Merge 538 polls into new dataframe
-df = pd.merge(df, recent_pres_polling, on=['state', 'answer'], how='left')
-
-# Sort alphabetically by state
-df = df.reindex(df.state.sort_values(ascending=True).index)
-
 # Convert odds_df column headers to list
 odds_df_columns = list(odds_df.columns.values)
 odds_df_columns.remove('answer')
 odds_df_columns.remove('state')
-odds_df_loop = odds_df
+odds_df_loop = odds_df.copy()
 del odds_df_loop['answer']
 del odds_df_loop['state']
 
-# loop through odds columns to convert to implied probability:
+# denominator / (denominator + numerator) = implied probability
+# Loop through odds columns to convert fractional odds to new column of implied probability
 for i in odds_df_columns:
 	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].str.split('/', 1).str
 	odds_df_loop['denominator'] = pd.to_numeric(odds_df_loop['denominator'], errors='coerce').fillna(0).astype(np.int64)
@@ -129,36 +120,57 @@ for i in odds_df_columns:
 	odds_df_loop['numerator'] = pd.to_numeric(odds_df_loop['numerator'], errors='coerce').fillna(0).astype(np.int64)
 	odds_df_loop[str(i) + '_imp_prob'] = (odds_df_loop['denominator'] / (odds_df_loop['denominator'] + odds_df_loop['numerator'])).round(2)
 
-#print(odds_df_loop)
+# Concatenate imp_prob columns with 'answer' and 'state' columns
+asdf = [odds_df['answer'], odds_df['state']]
+headers = ["answer", "state"]
+as_df = pd.concat(asdf, axis=1, keys=headers)
+odds_imp_prob_df = pd.concat([odds_df_loop, as_df], axis=1)
 
-# Convert fractional odds to new column of implied probability
-# denominator / (denominator + numerator) = implied probability
-df['numerator'], df['denominator'] = df['betfair'].str.split('/', 1).str
-df['denominator'] = pd.to_numeric(df['denominator'], errors='coerce').fillna(0).astype(np.int64)
-df['denominator'] = df['denominator'].mask(df['denominator']==0).fillna(1) # workaround
-df['numerator'] = pd.to_numeric(df['numerator'], errors='coerce').fillna(0).astype(np.int64)
-df['betfair_imp_prob'] = (df['denominator'] / (df['denominator'] + df['numerator']))
+# Merge PredictIt and odds dataframes together
+df = pd.merge(predictit_df, odds_imp_prob_df, on=['state', 'answer'], how='left')
+
+# Merge 538 polls into new dataframe
+df = pd.merge(df, recent_pres_polling, on=['state', 'answer'], how='left')
 
 # workaround to fix previous workaround
-mask = df['betfair'].isnull()
-column_name = 'betfair_imp_prob'
-df.loc[mask, column_name] = np.nan
+for i in odds_df_columns:
+	mask = df[i].isnull()
+	column_name = str(i) + '_imp_prob'
+	df.loc[mask, column_name] = np.nan
+
+# Find average of all implied probabilities
+m = df.loc[:, df.columns.str.contains('_imp_prob')]
+odds_df_columns2 = list(m.columns.values)
+df['ari_mean_imp_prob'] = df[odds_df_columns2].mean(1).round(2)
+
+# Sort alphabetically by state
+df = df.reindex(df.state.sort_values(ascending=True).index)
 
 # Create column of difference in betfair & PredictIt
-df['betfair-PredicitIt'] = df['betfair_imp_prob']-df['bestBuyYesCost']
-
-# Round 2 decimal places
-df['betfair_imp_prob'] = df['betfair_imp_prob'].round(2)
-df['betfair-PredicitIt'] = df['betfair-PredicitIt'].round(2)
+df['ari_mean_imp_prob-PredicitIt'] = (df['ari_mean_imp_prob']-df['bestBuyYesCost']).round(2)
 
 #print out select columns
 print(df[['state', 
-            'answer', 
-            'recent_poll', 
-            'bestBuyYesCost', 
-            'betfair',
-            'betfair_imp_prob',
-            'betfair-PredicitIt']])
+			'answer', 
+			'recent_poll', 
+			'bestBuyYesCost', 
+			'betfair',
+			'betfair_imp_prob',
+			'WilliamHill',
+			'WilliamHill_imp_prob',
+			#'skybet_imp_prob',
+			#'ladbrokes_imp_prob',
+			#'888sport_imp_prob',
+			#'paddypower_imp_prob',
+			#'unibet_imp_prob',
+			#'coral_imp_prob',
+			#'betfred_imp_prob',
+			#'betway_imp_prob',
+			#'sportingbet_imp_prob',
+			#'betfairexchange_imp_prob',
+			#'smarkets_imp_prob',
+			'ari_mean_imp_prob',
+			'ari_mean_imp_prob-PredicitIt']])
 
 # Write dataframe to CSV file in working directory
 df.to_csv(r'./predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
