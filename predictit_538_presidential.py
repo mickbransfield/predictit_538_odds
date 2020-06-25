@@ -129,7 +129,7 @@ for i in odds_df_columns:
 	odds_df_loop['numerator'] = pd.to_numeric(odds_df_loop['numerator'], errors='coerce').fillna(0).astype(np.int64)
 	odds_df_loop[str(i) + '_imp_prob'] = (odds_df_loop['denominator'] / (odds_df_loop['denominator'] + odds_df_loop['numerator'])).round(2)
 
-print(odds_df_loop)
+#print(odds_df_loop)
 
 # Convert fractional odds to new column of implied probability
 # denominator / (denominator + numerator) = implied probability
