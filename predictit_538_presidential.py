@@ -113,6 +113,24 @@ df = pd.merge(df, recent_pres_polling, on=['state', 'answer'], how='left')
 # Sort alphabetically by state
 df = df.reindex(df.state.sort_values(ascending=True).index)
 
+# Convert odds_df column headers to list
+odds_df_columns = list(odds_df.columns.values)
+odds_df_columns.remove('answer')
+odds_df_columns.remove('state')
+odds_df_loop = odds_df
+del odds_df_loop['answer']
+del odds_df_loop['state']
+
+# loop through odds columns to convert to implied probability:
+for i in odds_df_columns:
+	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].str.split('/', 1).str
+	odds_df_loop['denominator'] = pd.to_numeric(odds_df_loop['denominator'], errors='coerce').fillna(0).astype(np.int64)
+	odds_df_loop['denominator'] = odds_df_loop['denominator'].mask(odds_df_loop['denominator']==0).fillna(1) # workaround
+	odds_df_loop['numerator'] = pd.to_numeric(odds_df_loop['numerator'], errors='coerce').fillna(0).astype(np.int64)
+	odds_df_loop[str(i) + '_imp_prob'] = (odds_df_loop['denominator'] / (odds_df_loop['denominator'] + odds_df_loop['numerator'])).round(2)
+
+print(odds_df_loop)
+
 # Convert fractional odds to new column of implied probability
 # denominator / (denominator + numerator) = implied probability
 df['numerator'], df['denominator'] = df['betfair'].str.split('/', 1).str
