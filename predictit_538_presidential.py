@@ -1,5 +1,5 @@
 # TO DO
-# 1. add bestBuyNoCost
+# 1. add bestBuyNoCost for opponent
 # 2. Fix workaround in nan values for implied probability
 # 3. Dashboard
 # 4. Fair probability
