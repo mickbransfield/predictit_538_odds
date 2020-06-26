@@ -34,7 +34,7 @@ jobs:
           team-reviewers: owners, maintainers
           milestone: 1
           draft: false
-          branch: master
+          branch: temp
           request-to-parent: false
       - name: Check outputs
         run: |
