@@ -5,7 +5,7 @@ name: Create Pull Request
       - temp
   pull_request:
   schedule:
-    - cron: '55 17 * * *'
+    - cron: '17 20 * * *'
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
