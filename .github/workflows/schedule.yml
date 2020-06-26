@@ -15,7 +15,7 @@ jobs:
         run: date +%s > report.txt
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v2
+        uses: mauricebransfield/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file
@@ -29,8 +29,8 @@ jobs:
 
             [1]: https://github.com/peter-evans/create-pull-request
           labels: report, automated pr
-          assignees: peter-evans
-          reviewers: peter-evans
+          assignees: mauricebransfield
+          reviewers: mauricebransfield
           team-reviewers: owners, maintainers
           milestone: 1
           draft: false
