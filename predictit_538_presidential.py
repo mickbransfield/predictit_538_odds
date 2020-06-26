@@ -1,7 +1,7 @@
 # TO DO
 # 1. add bestBuyNoCost for opponent
-# 2. Fix workaround in nan values for implied probability
-# 3. Dashboard
+# 2. Dashboard
+# 3. Fix workaround in nan values for implied probability
 # 4. Fair probability
 
 # Import modules
@@ -143,7 +143,7 @@ m = df.loc[:, df.columns.str.contains('_imp_prob')]
 odds_df_columns2 = list(m.columns.values)
 df['ari_mean_imp_prob'] = df[odds_df_columns2].mean(1).round(2)
 
-# Sort alphabetically by state
+# Sort alphabetically by state and answer
 df = df.reindex(df.answer.sort_values(ascending=True).index)
 df = df.reindex(df.state.sort_values(ascending=True).index)
 
@@ -174,7 +174,7 @@ print(df[['state',
 			'ari_mean_imp_prob-PredicitIt']])
 
 # Write dataframe to CSV file in working directory
-df.to_csv(r'./predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
+df.to_csv(r'C:/Users/Mick/Documents/Python/Python/predictit_538_odds/predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
 
 # Write dataframe with timestamp to archive folder
 snapshotdate = datetime.datetime.today().strftime('%Y-%m-%d')
