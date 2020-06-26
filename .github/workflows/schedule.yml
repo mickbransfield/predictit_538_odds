@@ -1,9 +1,5 @@
 name: Create Pull Request
 'on':
-  push:
-    branches:
-      - master
-  pull_request:
   schedule:
     - cron: '50 16 * * *'
 jobs:
