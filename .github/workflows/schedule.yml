@@ -2,7 +2,7 @@ name: Create Pull Request
 'on':
   push:
     branches:
-      - master
+      - temp
   pull_request:
   schedule:
     - cron: '55 17 * * *'
