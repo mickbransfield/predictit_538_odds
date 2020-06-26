@@ -1,6 +1,6 @@
 # TO DO
 # 1. add bestBuyNoCost for opponent
-# 2. Dashboard
+# 2. Datapane dashboard
 # 3. Fix workaround in nan values for implied probability
 # 4. Fair probability
 
