@@ -20,7 +20,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file
           committer: GitHub <noreply@github.com>
-          author: mauricebransfield@users.noreply.github.com
+     #     author: mauricebransfield@users.noreply.github.com
           title: '[Example] Add report file'
           body: |
             New report
