@@ -1,2 +1,5 @@
 Archive/
 predictit_538_presidential.bat
+auto-push.bat
+update.sh
+.gitignore
