@@ -144,6 +144,7 @@ odds_df_columns2 = list(m.columns.values)
 df['ari_mean_imp_prob'] = df[odds_df_columns2].mean(1).round(2)
 
 # Sort alphabetically by state
+df = df.reindex(df.answer.sort_values(ascending=True).index)
 df = df.reindex(df.state.sort_values(ascending=True).index)
 
 # Create column of difference in betfair & PredictIt
