@@ -15,7 +15,7 @@ jobs:
         run: date +%s > report.txt
       - name: Create Pull Request
         id: cpr
-        uses: mauricebransfield/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file
