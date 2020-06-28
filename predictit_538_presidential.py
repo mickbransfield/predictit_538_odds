@@ -1,9 +1,8 @@
 # TO DO
 # 1. add bestBuyNoCost for opponent
-# 2. Datapane dashboard
-# 3. Fix beautifulsoup warning
-# 4. Fix workaround in nan values for implied probability
-# 5. Fair probability
+# 2. Fix beautifulsoup warning
+# 3. Fix workaround in nan values for implied probability
+# 4. Fair probability
 
 # Import modules
 import json
