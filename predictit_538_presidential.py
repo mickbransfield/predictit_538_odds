@@ -1,8 +1,9 @@
 # TO DO
 # 1. add bestBuyNoCost for opponent
 # 2. Datapane dashboard
-# 3. Fix workaround in nan values for implied probability
-# 4. Fair probability
+# 3. Fix beautifulsoup warning
+# 4. Fix workaround in nan values for implied probability
+# 5. Fair probability
 
 # Import modules
 import json
@@ -150,7 +151,7 @@ df = df.reindex(df.state.sort_values(ascending=True).index)
 # Create column of difference in betfair & PredictIt
 df['ari_mean_imp_prob-PredicitIt'] = (df['ari_mean_imp_prob']-df['bestBuyYesCost']).round(2)
 
-#print out select columns
+# Print out select columns
 print(df[['state', 
 			'answer', 
 			'recent_poll', 
