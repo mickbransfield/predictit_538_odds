@@ -1,8 +1,7 @@
 # TO DO
-# 1. add bestBuyNoCost for opponent
-# 2. Fix beautifulsoup warning
-# 3. Fix workaround in nan values for implied probability
-# 4. Fair probability
+# 1. 538 poll averages
+# 2. Fix workaround(s) in nan values for implied probability
+# 3. Fair probability
 
 # Import modules
 import json
@@ -41,7 +40,7 @@ for p in jsondata['markets']:
 predictit_df = pd.DataFrame(data)
 
 # Update dataframe column names
-predictit_df.columns=['Market_ID','Market_Name','Contract_ID','Contract_Name','bestBuyYesCost','bestBuyNoCost','BestSellYesCost','BestSellNoCost']
+predictit_df.columns=['Market_ID','Market_Name','Contract_ID','Contract_Name','PredictIt_Yes','bestBuyNoCost','BestSellYesCost','BestSellNoCost']
 
 # Filter PredicitIt dataframe to presidential state markets/contracts
 predictit_df = predictit_df[predictit_df['Market_Name'].str.contains("Which party will win") & predictit_df['Market_Name'].str.contains("2020 presidential election?")]
@@ -144,17 +143,23 @@ odds_df_columns2 = list(m.columns.values)
 df['ari_mean_imp_prob'] = df[odds_df_columns2].mean(1).round(2)
 
 # Sort alphabetically by state and answer
-df = df.reindex(df.answer.sort_values(ascending=True).index)
-df = df.reindex(df.state.sort_values(ascending=True).index)
+df = df.sort_values(["state", "answer"])
+
+# Create column matching Trump Yes cost with Biden No cost, and vice versa
+trump = (df['answer']=='Trump')
+df.loc[trump,'PredictIt_Oppo_No'] = df.loc[df['answer'] == 'Biden','bestBuyNoCost'].values
+biden = (df['answer']=='Biden')
+df.loc[biden,'PredictIt_Oppo_No'] = df.loc[df['answer'] == 'Trump','bestBuyNoCost'].values
 
 # Create column of difference in betfair & PredictIt
-df['ari_mean_imp_prob-PredicitIt'] = (df['ari_mean_imp_prob']-df['bestBuyYesCost']).round(2)
+df['ari_mean_imp_prob-PredicitIt_Yes'] = (df['ari_mean_imp_prob']-df['PredictIt_Yes']).round(2)
 
 # Print out select columns
 print(df[['state', 
 			'answer', 
 			'recent_poll', 
-			'bestBuyYesCost', 
+			'PredictIt_Yes',
+			'PredictIt_Oppo_No',
 			'betfair',
 			'betfair_imp_prob',
 			'WilliamHill',
@@ -171,7 +176,7 @@ print(df[['state',
 			#'betfairexchange_imp_prob',
 			#'smarkets_imp_prob',
 			'ari_mean_imp_prob',
-			'ari_mean_imp_prob-PredicitIt']])
+			'ari_mean_imp_prob-PredicitIt_Yes']])
 
 # Write dataframe to CSV file in working directory
 df.to_csv(r'C:/Users/Mick/Documents/Python/Python/predictit_538_odds/predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
