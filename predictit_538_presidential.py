@@ -1,6 +1,6 @@
 # TO DO
-# 1. 538 poll averages
-# 2. Fix workaround(s) in nan values for implied probability
+# 1. Fix poll numbers from same survey but different question, ie Delaware
+# 2. Clean up workarounds
 # 3. Fair probability
 
 # Import modules
@@ -80,8 +80,43 @@ pres_polling['created_at'] = pd.to_datetime(pres_polling['created_at']) #convert
 recent_pres_polling = pres_polling.sort_values(by=['created_at']).drop_duplicates(['state', 'candidate_name'], keep='last')
 recent_pres_polling = recent_pres_polling[recent_pres_polling['answer'].isin(['Biden', 'Trump'])]
 
-# Rename 538 'pct' column to recent_poll
-recent_pres_polling = recent_pres_polling.rename({'pct': 'recent_poll'}, axis=1)
+# Pull in polling data from 538 polling averages
+pres_poll_avg = pd.read_csv('https://projects.fivethirtyeight.com/2020-general-data/presidential_poll_averages_2020.csv')
+
+# Drop extraneous columns
+pres_poll_avg = pres_poll_avg.drop(['cycle'], axis=1)
+
+# Standardize congressional district names in 538 polling averages with PredictIt
+pres_poll_avg['state'] = pres_poll_avg['state'].str.replace('Maine CD-1','ME-01')
+pres_poll_avg['state'] = pres_poll_avg['state'].str.replace('Maine CD-2','ME-02')
+pres_poll_avg['state'] = pres_poll_avg['state'].str.replace('Nebraska CD-2','NE-02')
+
+# Split candidate_name column into 'answer' column
+pres_poll_avg['candidate_name'] = pres_poll_avg['candidate_name'].str.replace('Donald', 'Joseph R.') #ugly workaround
+start_string = "Joseph R. "
+end_string = " Jr."
+pres_poll_avg['a'], pres_poll_avg['answer'] = pres_poll_avg['candidate_name'].str.split("Joseph R. ", 1).str
+pres_poll_avg['answer'], pres_poll_avg['b'] = pres_poll_avg['answer'].str.split(end_string, 1).str
+del pres_poll_avg['a']
+del pres_poll_avg['b']
+
+# Strip trailing/leading whitespaces in answer column
+pres_poll_avg['answer'] = pres_poll_avg['answer'].str.strip()
+
+# Filter to most recent poll for Biden & Trump
+pres_poll_avg['modeldate'] = pd.to_datetime(pres_poll_avg['modeldate']) #convert 'modeldate' to datetime
+pres_poll_avg = pres_poll_avg.sort_values(by=['modeldate']).drop_duplicates(['state', 'candidate_name'], keep='last')
+pres_poll_avg = pres_poll_avg[pres_poll_avg['answer'].isin(['Biden', 'Trump'])]
+
+# Rename 538 'pct' column to '538_latest_poll'
+recent_pres_polling = recent_pres_polling.rename({'pct': '538_latest_poll'}, axis=1)
+
+# Round pct_estimate and pct_trend_adjusted to 2 decimal places
+pres_poll_avg['pct_estimate'] = pres_poll_avg['pct_estimate'].round(2)
+pres_poll_avg['pct_trend_adjusted'] = pres_poll_avg['pct_trend_adjusted'].round(2)
+
+# Merge 538 poll and 538 poll averages dataframes together
+recent_pres_polling = pd.merge(recent_pres_polling, pres_poll_avg, on=['state', 'answer'], how='left')
 
 # Pull in odds
 odds_df = pd.read_csv('https://raw.githubusercontent.com/mauricebransfield/predictit_538_odds/master/odds_state_presidential.csv', index_col=[0]) # error_bad_lines=False,
@@ -157,7 +192,9 @@ df['ari_mean_imp_prob-PredicitIt_Yes'] = (df['ari_mean_imp_prob']-df['PredictIt_
 # Print out select columns
 print(df[['state', 
 			'answer', 
-			'recent_poll', 
+			'538_latest_poll', 
+			'pct_estimate',
+			'pct_trend_adjusted',
 			'PredictIt_Yes',
 			'PredictIt_Oppo_No',
 			'betfair',
