@@ -1,7 +1,6 @@
 # TO DO
-# 1. Fix poll numbers from same survey but different question, ie Delaware
-# 2. Clean up workarounds
-# 3. Fair probability
+# 1. Clean up workarounds
+# 2. Fair probability
 
 # Import modules
 import json
@@ -10,6 +9,7 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 pd.set_option('display.max_rows', None) #print all rows without truncating
+pd.options.mode.chained_assignment = None #hide SettingWithCopyWarning
 import numpy as np
 import datetime
 import os
@@ -68,7 +68,7 @@ pres_polling = pd.read_csv('https://projects.fivethirtyeight.com/polls-page/pres
 pres_polling = pres_polling.dropna(subset=['state'])
 
 # Drop extraneous columns
-pres_polling = pres_polling.drop(['pollster_id', 'pollster','sponsor_ids','sponsors','display_name', 'pollster_rating_id', 'pollster_rating_name', 'fte_grade', 'sample_size', 'population', 'population_full', 'methodology', 'seat_number', 'seat_name', 'start_date', 'end_date', 'sponsor_candidate', 'internal', 'partisan', 'tracking', 'nationwide_batch', 'ranked_choice_reallocated', 'notes', 'url'], axis=1)
+pres_polling = pres_polling.drop(['pollster_id', 'pollster','sponsor_ids','sponsors','display_name', 'pollster_rating_id', 'pollster_rating_name', 'fte_grade', 'sample_size', 'population', 'population_full', 'methodology', 'seat_number', 'seat_name', 'start_date', 'sponsor_candidate', 'internal', 'partisan', 'tracking', 'nationwide_batch', 'ranked_choice_reallocated', 'notes', 'url'], axis=1)
 
 # Standardize congressional district names in 538 with PredictIt
 pres_polling['state'] = pres_polling['state'].str.replace('Maine CD-1','ME-01')
@@ -76,9 +76,18 @@ pres_polling['state'] = pres_polling['state'].str.replace('Maine CD-2','ME-02')
 pres_polling['state'] = pres_polling['state'].str.replace('Nebraska CD-2','NE-02')
 
 # Filter to most recent poll for Biden & Trump
+# create a count column for 'question_id' to work around "Delaware problem": multiple matchups in same survey
 pres_polling['created_at'] = pd.to_datetime(pres_polling['created_at']) #convert 'created_at' to datetime
-recent_pres_polling = pres_polling.sort_values(by=['created_at']).drop_duplicates(['state', 'candidate_name'], keep='last')
-recent_pres_polling = recent_pres_polling[recent_pres_polling['answer'].isin(['Biden', 'Trump'])]
+recent_pres_polling = pres_polling[pres_polling['answer'].isin(['Biden', 'Trump'])]
+recent_pres_polling['Count'] = recent_pres_polling.groupby('question_id')['question_id'].transform('count')
+recent_pres_polling = recent_pres_polling[(recent_pres_polling.Count > 1)]
+recent_pres_polling = recent_pres_polling.sort_values(by=['question_id'], ascending=False).drop_duplicates(['state', 'candidate_name'], keep='first')
+
+# Rename 538 'pct' column to '538_latest_poll'
+recent_pres_polling = recent_pres_polling.rename({'pct': '538_latest_poll'}, axis=1)
+
+# Rename 538 'end_date' column to '538_poll_date'
+recent_pres_polling = recent_pres_polling.rename({'end_date': '538_poll_date'}, axis=1)
 
 # Pull in polling data from 538 polling averages
 pres_poll_avg = pd.read_csv('https://projects.fivethirtyeight.com/2020-general-data/presidential_poll_averages_2020.csv')
@@ -107,9 +116,6 @@ pres_poll_avg['answer'] = pres_poll_avg['answer'].str.strip()
 pres_poll_avg['modeldate'] = pd.to_datetime(pres_poll_avg['modeldate']) #convert 'modeldate' to datetime
 pres_poll_avg = pres_poll_avg.sort_values(by=['modeldate']).drop_duplicates(['state', 'candidate_name'], keep='last')
 pres_poll_avg = pres_poll_avg[pres_poll_avg['answer'].isin(['Biden', 'Trump'])]
-
-# Rename 538 'pct' column to '538_latest_poll'
-recent_pres_polling = recent_pres_polling.rename({'pct': '538_latest_poll'}, axis=1)
 
 # Round pct_estimate and pct_trend_adjusted to 2 decimal places
 pres_poll_avg['pct_estimate'] = pres_poll_avg['pct_estimate'].round(2)
@@ -187,19 +193,20 @@ biden = (df['answer']=='Biden')
 df.loc[biden,'PredictIt_Oppo_No'] = df.loc[df['answer'] == 'Trump','bestBuyNoCost'].values
 
 # Create column of difference in betfair & PredictIt
-df['ari_mean_imp_prob-PredicitIt_Yes'] = (df['ari_mean_imp_prob']-df['PredictIt_Yes']).round(2)
+df['ari_mean_imp_prob-PredictIt_Yes'] = (df['ari_mean_imp_prob']-df['PredictIt_Yes']).round(2)
 
 # Print out select columns
 print(df[['state', 
 			'answer', 
-			'538_latest_poll', 
+			'538_latest_poll',
+			'538_poll_date',
 			'pct_estimate',
 			'pct_trend_adjusted',
 			'PredictIt_Yes',
 			'PredictIt_Oppo_No',
 			'betfair',
 			'betfair_imp_prob',
-			'WilliamHill',
+			#'WilliamHill',
 			'WilliamHill_imp_prob',
 			#'skybet_imp_prob',
 			#'ladbrokes_imp_prob',
@@ -213,7 +220,7 @@ print(df[['state',
 			#'betfairexchange_imp_prob',
 			#'smarkets_imp_prob',
 			'ari_mean_imp_prob',
-			'ari_mean_imp_prob-PredicitIt_Yes']])
+			'ari_mean_imp_prob-PredictIt_Yes']])
 
 # Write dataframe to CSV file in working directory
 df.to_csv(r'C:/Users/Mick/Documents/Python/Python/predictit_538_odds/predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
