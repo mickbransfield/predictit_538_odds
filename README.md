@@ -1,7 +1,7 @@
 # PredictIt 538 Odds
 ### Comparing PredictIt shares, betting odds, and 538 polling in the 2020 U.S. Presidential election.
 
-### A simple python script that compares by state:
+A simple python script that compares by state:
 * The latest [general election polling](https://projects.fivethirtyeight.com/polls/president-general/) used by 538
 * The latest 538 [polling averages](https://projects.fivethirtyeight.com/polls/president-general/alabama/)
 * Current PredictIt [share prices](https://www.predictit.org/markets/13/Prez-Election)
