@@ -1,6 +1,6 @@
 # TO DO
-# 1. Clean up workarounds
-# 2. Fair probability
+# 1. Fair probability
+# 2. Clean up workarounds
 
 # Import modules
 import json
