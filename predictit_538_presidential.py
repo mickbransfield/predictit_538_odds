@@ -1,6 +1,7 @@
 # TO DO
 # 1. Fair probability
 # 2. Clean up workarounds
+# 3. Datapane map
 
 # Import modules
 import json
@@ -209,11 +210,9 @@ print(df[['state',
 			#'WilliamHill',
 			'WilliamHill_imp_prob',
 			#'skybet_imp_prob',
-			#'ladbrokes_imp_prob',
 			#'888sport_imp_prob',
 			#'paddypower_imp_prob',
 			#'unibet_imp_prob',
-			#'coral_imp_prob',
 			#'betfred_imp_prob',
 			#'betway_imp_prob',
 			#'sportingbet_imp_prob',
