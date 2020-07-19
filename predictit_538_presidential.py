@@ -2,6 +2,8 @@
 # 1. Fair probability
 # 2. Clean up workarounds
 # 3. Datapane map
+# 4. Hedge opportunities
+# 5. Change since prior poll
 
 # Import modules
 import json
