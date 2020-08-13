@@ -17,6 +17,8 @@ import numpy as np
 import datetime
 import os
 
+
+
 # Pull in market data from PredictIt's API
 Predictit_URL = "https://www.predictit.org/api/marketdata/all/"
 Predictit_response = requests.get(Predictit_URL)
@@ -66,6 +68,8 @@ predictit_df['answer'] = predictit_df['Contract_Name'].str.replace('Republican',
 predictit_df['state'] = predictit_df['state'].str.strip()
 predictit_df['answer'] = predictit_df['answer'].str.strip()
 
+
+
 # Pull in polling data from 538
 pres_polling = pd.read_csv('https://projects.fivethirtyeight.com/polls-page/president_polls.csv')
 pres_polling = pres_polling.dropna(subset=['state'])
@@ -91,6 +95,8 @@ recent_pres_polling = recent_pres_polling.rename({'pct': '538_latest_poll'}, axi
 
 # Rename 538 'end_date' column to '538_poll_date'
 recent_pres_polling = recent_pres_polling.rename({'end_date': '538_poll_date'}, axis=1)
+
+
 
 # Pull in polling data from 538 polling averages
 pres_poll_avg = pd.read_csv('https://projects.fivethirtyeight.com/2020-general-data/presidential_poll_averages_2020.csv')
@@ -126,6 +132,41 @@ pres_poll_avg['pct_trend_adjusted'] = pres_poll_avg['pct_trend_adjusted'].round(
 
 # Merge 538 poll and 538 poll averages dataframes together
 recent_pres_polling = pd.merge(recent_pres_polling, pres_poll_avg, on=['state', 'answer'], how='left')
+
+
+
+# Pull in most recent state-level models from 538
+pres_model = pd.read_csv('https://projects.fivethirtyeight.com/2020-general-data/presidential_state_toplines_2020.csv')
+
+# Only keep latest models
+pres_model = pres_model.sort_values(by=['modeldate'], ascending=False).drop_duplicates(['state', 'branch'], keep='first')
+
+#Split into 2 dataframes for Trump and Biden
+pres_model_inc = pres_model[['candidate_inc', 'state', 'winstate_inc', 'voteshare_inc', 'voteshare_inc_hi', 'voteshare_inc_lo', 'win_EC_if_win_state_inc', 'win_state_if_win_EC_inc']]
+pres_model_chal = pres_model[['candidate_chal', 'state', 'winstate_chal', 'voteshare_chal', 'voteshare_chal_hi', 'voteshare_chal_lo', 'win_EC_if_win_state_chal', 'win_state_if_win_EC_chal']]
+
+# Remove _inc and _chal from column names
+pres_model_inc = pres_model_inc.rename(columns={'candidate_inc': 'answer', 'winstate_inc': 'winstate', 'voteshare_inc': 'voteshare', 'voteshare_inc_hi': 'voteshare_hi', 'voteshare_inc_lo': 'voteshare_lo', 'win_EC_if_win_state_inc': 'win_EC_if_win_state', 'win_state_if_win_EC_inc': 'win_state_if_win_EC'} )
+pres_model_chal = pres_model_chal.rename(columns={'candidate_chal': 'answer', 'winstate_chal': 'winstate','voteshare_chal': 'voteshare', 'voteshare_chal_hi': 'voteshare_hi', 'voteshare_chal_lo': 'voteshare_lo', 'win_EC_if_win_state_chal': 'win_EC_if_win_state', 'win_state_if_win_EC_chal': 'win_state_if_win_EC'} )
+
+# Concatenate Trump and Biden dataframes together
+frames = [pres_model_inc, pres_model_chal]
+pres_model = pd.concat(frames)
+
+# Change 'District of Columbia' to 'DC'
+pres_model['state'] = pres_model['state'].str.replace('District of Columbia','DC')
+
+# Standardize congressional district names
+pres_model['state'] = pres_model['state'].str.replace('ME-1','ME-01')
+pres_model['state'] = pres_model['state'].str.replace('ME-2','ME-02')
+pres_model['state'] = pres_model['state'].str.replace('NE-1','NE-01')
+pres_model['state'] = pres_model['state'].str.replace('NE-2','NE-02')
+pres_model['state'] = pres_model['state'].str.replace('NE-3','NE-03')
+
+# Rename 538 'end_date' column to '538_poll_date'
+pres_model = pres_model.rename({'winstate': '538_model'}, axis=1)
+
+
 
 # Pull in odds
 odds_df = pd.read_csv('https://raw.githubusercontent.com/mauricebransfield/predictit_538_odds/master/odds_state_presidential.csv', index_col=[0]) # error_bad_lines=False,
@@ -175,6 +216,9 @@ df = pd.merge(predictit_df, odds_imp_prob_df, on=['state', 'answer'], how='left'
 # Merge 538 polls into new dataframe
 df = pd.merge(df, recent_pres_polling, on=['state', 'answer'], how='left')
 
+# Merge 538 models into new dataframe
+df = pd.merge(df, pres_model, on=['state', 'answer'], how='left')
+
 # workaround to fix previous workaround
 for i in odds_df_columns:
 	mask = df[i].isnull()
@@ -195,22 +239,29 @@ df.loc[trump,'PredictIt_Oppo_No'] = df.loc[df['answer'] == 'Biden','bestBuyNoCos
 biden = (df['answer']=='Biden')
 df.loc[biden,'PredictIt_Oppo_No'] = df.loc[df['answer'] == 'Trump','bestBuyNoCost'].values
 
-# Create column of difference in betfair & PredictIt
+# Create column of difference in betting odds & PredictIt
 df['ari_mean_imp_prob-PredictIt_Yes'] = (df['ari_mean_imp_prob']-df['PredictIt_Yes']).round(2)
+
+# Create column of difference in 538 & PredictIt
+df['538-PredictIt_Yes'] = (df['538_model']-df['PredictIt_Yes']).round(2)
+
+# Create column of difference in 538 & betting odds
+df['538-ari_mean_imp_prob'] = (df['538_model']-df['ari_mean_imp_prob']).round(2)
 
 # Print out select columns
 print(df[['state', 
 			'answer', 
 			'538_latest_poll',
 			'538_poll_date',
-			'pct_estimate',
-			'pct_trend_adjusted',
+			#'pct_estimate',
+			#'pct_trend_adjusted',
+			'538_model',
 			'PredictIt_Yes',
 			'PredictIt_Oppo_No',
 			'betfair',
 			'betfair_imp_prob',
 			#'WilliamHill',
-			'WilliamHill_imp_prob',
+			#'WilliamHill_imp_prob',
 			#'skybet_imp_prob',
 			#'bet365_imp_prob',
 			#'888sport_imp_prob',
@@ -232,7 +283,9 @@ print(df[['state',
 			#'novibet_imp_prob',
 			#'matchbook_imp_prob',
 			'ari_mean_imp_prob',
-			'ari_mean_imp_prob-PredictIt_Yes']])
+			'ari_mean_imp_prob-PredictIt_Yes',
+			'538-PredictIt_Yes',
+			'538-ari_mean_imp_prob']])
 
 # Write dataframe to CSV file in working directory
 df.to_csv(r'C:/Users/Mick/Documents/Python/Python/predictit_538_odds/predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
