@@ -1,9 +1,8 @@
 # TO DO
 # 1. Fair probability
-# 2. Clean up workarounds
+# 2. Hedge opportunities
 # 3. Datapane map
-# 4. Hedge opportunities
-# 5. Change since prior poll
+# 4. Change since prior poll
 
 # Import modules
 import json
@@ -109,17 +108,10 @@ pres_poll_avg['state'] = pres_poll_avg['state'].str.replace('Maine CD-1','ME-01'
 pres_poll_avg['state'] = pres_poll_avg['state'].str.replace('Maine CD-2','ME-02')
 pres_poll_avg['state'] = pres_poll_avg['state'].str.replace('Nebraska CD-2','NE-02')
 
-# Split candidate_name column into 'answer' column
-pres_poll_avg['candidate_name'] = pres_poll_avg['candidate_name'].str.replace('Donald', 'Joseph R.') #ugly workaround
-start_string = "Joseph R. "
-end_string = " Jr."
-pres_poll_avg['a'], pres_poll_avg['answer'] = pres_poll_avg['candidate_name'].str.split("Joseph R. ", 1).str
-pres_poll_avg['answer'], pres_poll_avg['b'] = pres_poll_avg['answer'].str.split(end_string, 1).str
-del pres_poll_avg['a']
-del pres_poll_avg['b']
+# Standarize candidate names and column name
+pres_poll_avg.replace({'candidate_name' : { 'Joseph R. Biden Jr.' : 'Biden', 'Donald Trump' : 'Trump'}})
+pres_poll_avg['answer'] = pres_poll_avg['candidate_name']
 
-# Strip trailing/leading whitespaces in answer column
-pres_poll_avg['answer'] = pres_poll_avg['answer'].str.strip()
 
 # Filter to most recent poll for Biden & Trump
 pres_poll_avg['modeldate'] = pd.to_datetime(pres_poll_avg['modeldate']) #convert 'modeldate' to datetime
