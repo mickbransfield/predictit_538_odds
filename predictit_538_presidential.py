@@ -112,7 +112,6 @@ pres_poll_avg['state'] = pres_poll_avg['state'].str.replace('Nebraska CD-2','NE-
 pres_poll_avg.replace({'candidate_name' : { 'Joseph R. Biden Jr.' : 'Biden', 'Donald Trump' : 'Trump'}})
 pres_poll_avg['answer'] = pres_poll_avg['candidate_name']
 
-
 # Filter to most recent poll for Biden & Trump
 pres_poll_avg['modeldate'] = pd.to_datetime(pres_poll_avg['modeldate']) #convert 'modeldate' to datetime
 pres_poll_avg = pres_poll_avg.sort_values(by=['modeldate']).drop_duplicates(['state', 'candidate_name'], keep='last')
