@@ -15,6 +15,8 @@ pd.options.mode.chained_assignment = None #hide SettingWithCopyWarning
 import numpy as np
 import datetime
 import os
+import zipfile #Economist
+import urllib.request #Economist
 
 
 
@@ -126,7 +128,7 @@ recent_pres_polling = pd.merge(recent_pres_polling, pres_poll_avg, on=['state', 
 
 
 
-# Pull in most recent state-level models from 538
+# Pull in most recent state-level model data from 538
 pres_model = pd.read_csv('https://projects.fivethirtyeight.com/2020-general-data/presidential_state_toplines_2020.csv')
 
 # Only keep latest models
@@ -159,7 +161,99 @@ pres_model = pres_model.rename({'winstate': '538_model'}, axis=1)
 
 
 
-# Pull in odds
+# Pull in most recent state-level model data from The Economist
+url = 'https://cdn.economistdatateam.com/us-2020-forecast/data/president/economist_model_output.zip'
+remote = urllib.request.urlopen(url)  # read remote file
+data = remote.read()  # read from remote file
+remote.close()  # close urllib request
+local = open('economist_model_output.zip', 'wb')  # write binary to local file
+local.write(data)
+local.close()  # close file
+zf = zipfile.ZipFile('economist_model_output.zip') 
+econ_df = pd.read_csv(zf.open('output/site_data//state_averages_and_predictions_topline.csv'))
+
+# Rename columns in econ_df
+#econ_df = econ_df.rename({'projected_win_prob': 'dem_projected_win_prob'})
+
+# Create Trump dataframe from Biden dataframe
+econ_df_trump = econ_df.copy()
+
+# Add answer column
+econ_df['answer'] = 'Biden'
+econ_df_trump['answer'] = 'Trump'
+
+# Drop extraneous columns
+econ_df = econ_df.drop(columns=['dem_average_low', 'dem_average_mean', 'dem_average_high', 'projected_vote_low', 'projected_vote_high', 'projected_vote_mean'])
+econ_df_trump = econ_df_trump.drop(columns=['dem_average_low', 'dem_average_mean', 'dem_average_high', 'projected_vote_low', 'projected_vote_high', 'projected_vote_mean'])
+
+# Calculate Trump probabilities from Biden probabilities
+econ_df_trump['projected_win_prob'] = 1 - econ_df_trump['projected_win_prob']
+
+# Concatenate dataframes
+frames = [econ_df, econ_df_trump]
+econ_df = pd.concat(frames)
+
+# Standardize state names in econ_df
+econ_df['state'] = econ_df['state'].map({
+						'AL':'Alabama',
+						'AK':'Alaska',
+						'AZ':'Arizona',
+						'AR':'Arkansas',
+						'CA':'California',
+						'CO':'Colorado',
+						'CT':'Connecticut',
+						'DE':'Delaware',
+						'DC':'DC',
+						'FL':'Florida',
+						'GA':'Georgia',
+						'HI':'Hawaii',
+						'ID':'Idaho',
+						'IL':'Illinois',
+						'IN':'Indiana',
+						'IA':'Iowa',
+						'KS':'Kansas',
+						'KY':'Kentucky',
+						'LA':'Louisiana',
+						'ME':'Maine',
+						'MD':'Maryland',
+						'MA':'Massachusetts',
+						'MI':'Michigan',
+						'MN':'Minnesota',
+						'MS':'Mississippi',
+						'MO':'Missouri',
+						'MT':'Montana',
+						'NE':'Nebraska',
+						'NV':'Nevada',
+						'NH':'New Hampshire',
+						'NJ':'New Jersey',
+						'NM':'New Mexico',
+						'NY':'New York',
+						'NC':'North Carolina',
+						'ND':'North Dakota',
+						'OH':'Ohio',
+						'OK':'Oklahoma',
+						'OR':'Oregon',
+						'PA':'Pennsylvania',
+						'RI':'Rhode Island',
+						'SC':'South Carolina',
+						'SD':'South Dakota',
+						'TN':'Tennessee',
+						'TX':'Texas',
+						'UT':'Utah',
+						'VT':'Vermont',
+						'VA':'Virginia',
+						'WA':'Washington',
+						'WV':'West Virginia',
+						'WI':'Wisconsin',
+						'WY':'Wyoming'})
+
+# Change column names
+econ_df = econ_df.rename(columns={"projected_win_prob": "Econ_model"})
+econ_df = econ_df.rename(columns={"date": "Econ_date"})
+
+
+
+# Pull in gambling odds
 odds_df = pd.read_csv('https://raw.githubusercontent.com/mauricebransfield/predictit_538_odds/master/odds_state_presidential.csv', index_col=[0]) # error_bad_lines=False,
 
 # Replace hyphen in state names with space
@@ -210,6 +304,9 @@ df = pd.merge(df, recent_pres_polling, on=['state', 'answer'], how='left')
 # Merge 538 models into new dataframe
 df = pd.merge(df, pres_model, on=['state', 'answer'], how='left')
 
+# Merge Economist models into new dataframe
+df = pd.merge(df, econ_df, on=['state', 'answer'], how='left')
+
 # workaround to fix previous workaround
 for i in odds_df_columns:
 	mask = df[i].isnull()
@@ -239,6 +336,9 @@ df['538-PredictIt_Yes'] = (df['538_model']-df['PredictIt_Yes']).round(2)
 # Create column of difference in 538 & betting odds
 df['538-ari_mean_imp_prob'] = (df['538_model']-df['ari_mean_imp_prob']).round(2)
 
+# Create column of difference in 538 & Economist
+df['538-Econ'] = (df['538_model']-df['Econ_model']).round(2)
+
 # Print out select columns
 print(df[['state', 
 			'answer', 
@@ -247,6 +347,7 @@ print(df[['state',
 			#'pct_estimate',
 			#'pct_trend_adjusted',
 			'538_model',
+			'Econ_model',
 			'PredictIt_Yes',
 			'PredictIt_Oppo_No',
 			'betfair',
@@ -275,7 +376,8 @@ print(df[['state',
 			'ari_mean_imp_prob',
 			'ari_mean_imp_prob-PredictIt_Yes',
 			'538-PredictIt_Yes',
-			'538-ari_mean_imp_prob']])
+			'538-ari_mean_imp_prob',
+			'538-Econ']])
 
 # Write dataframe to CSV file in working directory
 df.to_csv(r'C:/Users/Mick/Documents/Python/Python/predictit_538_odds/predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
