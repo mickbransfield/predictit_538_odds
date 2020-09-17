@@ -280,12 +280,15 @@ odds_df_loop = odds_df.copy()
 del odds_df_loop['answer']
 del odds_df_loop['state']
 
+
+def split_more(x):
+    return pd.Series( x.split('/') )
+
 # denominator / (denominator + numerator) = implied probability
 # Loop through odds columns to convert fractional odds to new column of implied probability
 for i in odds_df_columns:
 #	odds_df_loop.replace(['/'], [',']) 
-	odds_df_loop=odds_df_loop.fillna("1/1")
-	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].apply(lambda x: str(x).split('/'))
+	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].apply(split_more)
 #	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].str.split('/', 1).str
 	odds_df_loop['denominator'] = pd.to_numeric(odds_df_loop['denominator'], errors='coerce').fillna(0).astype(np.int64)
 	odds_df_loop['denominator'] = odds_df_loop['denominator'].mask(odds_df_loop['denominator']==0).fillna(1) # workaround
