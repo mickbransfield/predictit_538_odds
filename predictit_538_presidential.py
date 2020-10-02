@@ -287,13 +287,21 @@ def split_more(x):
 # denominator / (denominator + numerator) = implied probability
 # Loop through odds columns to convert fractional odds to new column of implied probability
 for i in odds_df_columns:
-#	odds_df_loop.replace(['/'], [',']) 
-	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].apply(split_more)
-#	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].str.split('/', 1).str
+	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].str.split('/', 1).str
 	odds_df_loop['denominator'] = pd.to_numeric(odds_df_loop['denominator'], errors='coerce').fillna(0).astype(np.int64)
 	odds_df_loop['denominator'] = odds_df_loop['denominator'].mask(odds_df_loop['denominator']==0).fillna(1) # workaround
 	odds_df_loop['numerator'] = pd.to_numeric(odds_df_loop['numerator'], errors='coerce').fillna(0).astype(np.int64)
 	odds_df_loop[str(i) + '_imp_prob'] = (odds_df_loop['denominator'] / (odds_df_loop['denominator'] + odds_df_loop['numerator'])).round(2)
+
+
+
+#	odds_df_loop.replace(['/'], [',']) 
+##	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].apply(split_more)
+#	odds_df_loop['numerator'], odds_df_loop['denominator'] = odds_df_loop[i].str.split('/', 1).str
+##	odds_df_loop['denominator'] = pd.to_numeric(odds_df_loop['denominator'], errors='coerce').fillna(0).astype(np.int64)
+##	odds_df_loop['denominator'] = odds_df_loop['denominator'].mask(odds_df_loop['denominator']==0).fillna(1) # workaround
+##	odds_df_loop['numerator'] = pd.to_numeric(odds_df_loop['numerator'], errors='coerce').fillna(0).astype(np.int64)
+##	odds_df_loop[str(i) + '_imp_prob'] = (odds_df_loop['denominator'] / (odds_df_loop['denominator'] + odds_df_loop['numerator'])).round(2)
 
 # Concatenate imp_prob columns with 'answer' and 'state' columns
 asdf = [odds_df['answer'], odds_df['state']]
@@ -358,8 +366,8 @@ print(df[['state',
 			'PredictIt_Oppo_No',
 			#'betfair',
 			#'betfair_imp_prob',
-			'WilliamHill',
-			'WilliamHill_imp_prob',
+			#'WilliamHill',
+			#'WilliamHill_imp_prob',
 			#'skybet_imp_prob',
 			#'bet365_imp_prob',
 			#'888sport_imp_prob',
