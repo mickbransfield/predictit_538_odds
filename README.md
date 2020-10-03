@@ -1,5 +1,6 @@
-# PredictIt 538 Odds
-### Comparing PredictIt shares, betting odds, and 538 polling in the 2020 U.S. Presidential election.
+# Introduction
+
+### Compare PredictIt shares, betting odds, 538 models, Economist models, and 538 polling in the 2020 U.S. Presidential election.
 
 A simple python script that compares by state:
 * The latest [general election polling](https://projects.fivethirtyeight.com/polls/president-general/) used by 538
@@ -8,3 +9,8 @@ A simple python script that compares by state:
 * Current PredictIt [share prices](https://www.predictit.org/markets/13/Prez-Election)
 * The [implied probabilities](https://help.smarkets.com/hc/en-gb/articles/214058369-How-to-calculate-implied-probability-in-betting) of gambling odds
 
+## Installation
+
+```
+pip install requests pandas numpy datetime
+```
