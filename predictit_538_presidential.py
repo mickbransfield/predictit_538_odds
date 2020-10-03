@@ -76,7 +76,7 @@ pres_polling = pd.read_csv('https://projects.fivethirtyeight.com/polls-page/pres
 pres_polling = pres_polling.dropna(subset=['state'])
 
 # Drop extraneous columns
-pres_polling = pres_polling.drop(['pollster_id', 'pollster','sponsor_ids','sponsors','display_name', 'pollster_rating_id', 'pollster_rating_name', 'fte_grade', 'sample_size', 'population', 'population_full', 'methodology', 'seat_number', 'seat_name', 'start_date', 'sponsor_candidate', 'internal', 'partisan', 'tracking', 'nationwide_batch', 'ranked_choice_reallocated', 'notes', 'url'], axis=1)
+pres_polling = pres_polling.drop(['pollster_id', 'sponsor_ids','sponsors','display_name', 'pollster_rating_id', 'pollster_rating_name', 'fte_grade', 'sample_size', 'population', 'population_full', 'methodology', 'seat_number', 'seat_name', 'start_date', 'sponsor_candidate', 'internal', 'partisan', 'tracking', 'nationwide_batch', 'ranked_choice_reallocated', 'notes', 'url'], axis=1)
 
 # Standardize congressional district names in 538 with PredictIt
 pres_polling['state'] = pres_polling['state'].str.replace('Maine CD-1','ME-01')
@@ -85,6 +85,7 @@ pres_polling['state'] = pres_polling['state'].str.replace('Nebraska CD-2','NE-02
 
 # Filter to most recent poll for Biden & Trump
 # create a count column for 'question_id' to work around "Delaware problem": multiple matchups in same survey
+pres_polling = pres_polling.loc[pres_polling['pollster'] != 'SurveyMonkey'] # filter out SurveyMonkey polls
 pres_polling['created_at'] = pd.to_datetime(pres_polling['created_at']) #convert 'created_at' to datetime
 recent_pres_polling = pres_polling[pres_polling['answer'].isin(['Biden', 'Trump'])]
 recent_pres_polling['Count'] = recent_pres_polling.groupby('question_id')['question_id'].transform('count')
@@ -269,11 +270,11 @@ odds_df['answer'] = odds_df['answer'].str.replace('Democratic','Biden')
 odds_df['answer'] = odds_df['answer'].str.replace('Democrats','Biden')
 odds_df['answer'] = odds_df['answer'].str.replace('Democrat','Biden')
 
+##### Drop rows with 
+odds_df = odds_df[odds_df.answer != '\n\n']
+
 # Drop columns with all nan values
 odds_df = odds_df.dropna(axis=1, how='all')
-
-##### Drop party rows that don't exist (removed 10/3/2020)
-odds_df = odds_df[odds_df.answer != '\n\n']
 
 # Convert odds_df column headers to list
 odds_df_columns = list(odds_df.columns.values)
@@ -350,45 +351,14 @@ print(df[['state',
 			'answer', 
 			'538_latest_poll',
 			'538_poll_date',
-			#'pct_estimate',
-			#'pct_trend_adjusted',
 			'538_model',
 			'Econ_model',
 			'PredictIt_Yes',
 			'PredictIt_Oppo_No',
-			#'betfair',
-			#'betfair_imp_prob',
-			#'WilliamHill',
-			#'WilliamHill_imp_prob',
-			#'skybet_imp_prob',
-			#'bet365_imp_prob',
-			#'888sport_imp_prob',
-			#'betvictor_imp_prob',
-			#'paddypower_imp_prob',
-			#'unibet_imp_prob',
-			#'betfred_imp_prob',
-			#'betway_imp_prob',
-			#'10bet_imp_prob',
-			#'BoyleSports_imp_prob',
-			#'vbet_imp_prob',
-			#'gentingbet_imp_prob', 
-			#'SportPesa_imp_prob', 
-			#'sportnation_imp_prob', 
-			#'spreadex_imp_prob',
-			#'betfairexchange_imp_prob',
-			#'smarkets_imp_prob',
-			#'novibet_imp_prob',
-			#'matchbook_imp_prob',
 			'ari_mean_imp_prob',
 			'ari_mean_imp_prob-PredictIt_Yes',
 			'538-PredictIt_Yes',
 			'538-ari_mean_imp_prob',
 			'538-Econ']])
 
-# Write dataframe to CSV file in working directory
-df.to_csv(r'C:/Users/Mick/Documents/Python/Python/predictit_538_odds/predictit_538_odds.csv', sep=',', encoding='utf-8', header='true')
 
-# Write dataframe with timestamp to archive folder
-snapshotdate = datetime.datetime.today().strftime('%Y-%m-%d')
-os.chdir('C:/Users/Mick/Documents/Python/Python/predictit_538_odds/Archive')
-df.to_csv(open(snapshotdate+'.csv','w'))
