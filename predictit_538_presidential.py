@@ -272,6 +272,9 @@ odds_df['answer'] = odds_df['answer'].str.replace('Democrat','Biden')
 # Drop columns with all nan values
 odds_df = odds_df.dropna(axis=1, how='all')
 
+##### Drop party rows that don't exist (removed 10/3/2020)
+odds_df = odds_df[odds_df.answer != '\n\n']
+
 # Convert odds_df column headers to list
 odds_df_columns = list(odds_df.columns.values)
 odds_df_columns.remove('answer')
