@@ -260,10 +260,9 @@ odds_df = pd.read_csv('https://raw.githubusercontent.com/mauricebransfield/predi
 # Replace hyphen in state names with space
 odds_df['state'] = odds_df['state'].str.replace('-',' ') 
 
-# Standardize Washington DC & Washington State & New Mexico
+# Standardize Washington DC & Washington State
 odds_df['state'] = odds_df['state'].str.replace('Washington Dc','DC')
 odds_df['state'] = odds_df['state'].str.replace('Washington State','Washington')
-odds_df['state'] = odds_df['state'].str.replace('new mexico presidential winner','New Mexico')
 
 # Replace party with candidate names
 odds_df['answer'] = odds_df['answer'].str.replace('Republicans','Trump')
