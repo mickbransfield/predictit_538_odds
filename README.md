@@ -12,5 +12,5 @@ A simple python script that compares by state:
 ## To run this script, first install the necessary libraries via pip:
 
 ```
-pip install requests pandas numpy datetime
+pip install numpy pandas requests urllib3
 ```
