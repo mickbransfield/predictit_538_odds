@@ -5,7 +5,7 @@
 A simple python script that compares by state:
 * The latest [general election polling](https://projects.fivethirtyeight.com/polls/president-general/) used by 538
 * 538 [presidential election forecast](https://projects.fivethirtyeight.com/2020-election-forecast/)
-* The Econmist [presidential election forecast](https://projects.economist.com/us-2020-forecast/president)
+* The Economist [presidential election forecast](https://projects.economist.com/us-2020-forecast/president)
 * Current PredictIt [share prices](https://www.predictit.org/markets/13/Prez-Election)
 * The [implied probabilities](https://help.smarkets.com/hc/en-gb/articles/214058369-How-to-calculate-implied-probability-in-betting) of gambling odds
 
