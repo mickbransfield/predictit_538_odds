@@ -9,7 +9,7 @@ A simple python script that compares by state:
 * Current PredictIt [share prices](https://www.predictit.org/markets/13/Prez-Election)
 * The [implied probabilities](https://help.smarkets.com/hc/en-gb/articles/214058369-How-to-calculate-implied-probability-in-betting) of gambling odds
 
-Historical data is visualized [here](https://datastudio.google.com/reporting/70e91e03-7cd8-4fc0-a23d-2c2ce5c4a868).
+Historical data is visualized [here](https://datastudio.google.com/s/oEa8E6Q09LM) and betting implied probabilities [here](https://datastudio.google.com/s/mLDTpCoZt9s).
 
 
 ## To run this script, first install the necessary libraries via pip:
